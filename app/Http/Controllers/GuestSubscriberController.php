@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 
 class GuestSubscriberController extends Controller
 {
+    // Subscribe a new email
     public function subscribe(Request $request)
     {
         $validated = $request->validate([
@@ -40,6 +41,7 @@ class GuestSubscriberController extends Controller
         ], 201);
     }
 
+    // Verify email using token
     public function verify(Request $request)
     {
         $validated = $request->validate([
@@ -60,6 +62,7 @@ class GuestSubscriberController extends Controller
         return response()->json(['message' => 'Email verified successfully']);
     }
 
+    // Unsubscribe an email
     public function unsubscribe(Request $request)
     {
         $validated = $request->validate([
@@ -77,11 +80,11 @@ class GuestSubscriberController extends Controller
         return response()->json(['message' => 'Unsubscribed successfully']);
     }
 
+    // List all active subscribers (verified and unverified)
     public function index()
     {
         $subscribers = GuestSubscriber::where('is_active', true)
-            ->whereNotNull('verified_at')
-            ->paginate(20);
+            ->paginate(20); // Include all active subscribers
         return response()->json($subscribers);
     }
 }
