@@ -39,13 +39,16 @@ Route::get('/search', [SearchController::class, 'search']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
+
+    // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/enable-2fa', [AuthController::class, 'enable2FA']);
     Route::post('/disable-2fa', [AuthController::class, 'disable2FA']);
 
-    // Librarian and Admin routes
+    // Librarian & Admin routes
     Route::middleware('role:admin,librarian')->group(function () {
+
         // Content sections
         Route::post('/content-sections', [ContentSectionController::class, 'store']);
         Route::put('/content-sections/{id}', [ContentSectionController::class, 'update']);
@@ -54,13 +57,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Staff members
         Route::post('/staff-members', [StaffMemberController::class, 'store']);
-        Route::post('/staff-members/{id}', [StaffMemberController::class, 'update']);
+        Route::put('/staff-members/{id}', [StaffMemberController::class, 'update']); // fixed: PUT
         Route::delete('/staff-members/{id}', [StaffMemberController::class, 'destroy']);
         Route::post('/staff-members/{id}/restore', [StaffMemberController::class, 'restore']);
 
         // Announcements
         Route::post('/announcements', [AnnouncementController::class, 'store']);
-        Route::post('/announcements/{id}', [AnnouncementController::class, 'update']);
+        Route::put('/announcements/{id}', [AnnouncementController::class, 'update']); // fixed: PUT
         Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
         Route::post('/announcements/{id}/restore', [AnnouncementController::class, 'restore']);
 
@@ -85,15 +88,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Users
         Route::get('/users', [UserController::class, 'index']);
-        
-        // Subscribers management
-        Route::get('/subscribers', [GuestSubscriberController::class, 'index']);
+        Route::put('/users/{id}', [UserController::class, 'update']); // ← FIXED PUT route
     });
 
-    // Admin only routes
+    // Admin-only routes
     Route::middleware('role:admin')->group(function () {
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
         Route::put('/settings/{key}', [SettingController::class, 'update']);
         Route::post('/settings/bulk', [SettingController::class, 'bulkUpdate']);
+        Route::get('/subscribers', [GuestSubscriberController::class, 'index']);
     });
+
 });
