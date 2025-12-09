@@ -5,47 +5,48 @@ namespace App\Http\Controllers;
 use App\Models\StaffMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class StaffMemberController extends Controller
 {
-    public function index()
-    {
-        $staff = StaffMember::where('is_active', true)
-            ->orderBy('order')
-            ->get();
+    private function translateToTagalog($text) {
+        $tr = new GoogleTranslate('tl'); // 'tl' = Tagalog
+        return $tr->translate($text);
+    }
+
+    public function index() {
+        $staff = StaffMember::where('is_active', true)->orderBy('order')->get();
+
+        // Append full image URL
+        $staff->each(function ($item) {
+            if ($item->image_path) {
+                $item->image_url = asset('storage/' . $item->image_path);
+            }
+        });
+
         return response()->json($staff);
     }
 
-    public function show($id)
-    {
-        $staff = StaffMember::findOrFail($id);
-        return response()->json($staff);
-    }
-
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $validated = $request->validate([
-            'name.en' => 'required|string',
-            'name.tl' => 'nullable|string',
-            'role.en' => 'required|string',
-            'role.tl' => 'nullable|string',
+            'name' => 'required|string',
+            'role' => 'required|string',
             'email' => 'nullable|email',
             'phone' => 'nullable|string',
-            'bio.en' => 'nullable|string',
-            'bio.tl' => 'nullable|string',
+            'bio' => 'nullable|string',
             'image' => 'nullable|image|max:2048',
             'order' => 'nullable|integer',
-            'is_active' => 'nullable|boolean'
+            'is_active' => 'nullable|boolean',
         ]);
 
         $data = [
             'name' => [
-                'en' => $request->input('name.en'),
-                'tl' => $request->input('name.tl') ?? $request->input('name.en'),
+                'en' => $request->name,
+                'tl' => $this->translateToTagalog($request->name),
             ],
             'role' => [
-                'en' => $request->input('role.en'),
-                'tl' => $request->input('role.tl') ?? $request->input('role.en'),
+                'en' => $request->role,
+                'tl' => $this->translateToTagalog($request->role),
             ],
             'email' => $request->email,
             'phone' => $request->phone,
@@ -57,34 +58,38 @@ class StaffMemberController extends Controller
             $data['image_path'] = $request->file('image')->store('staff', 'public');
         }
 
-        if ($request->has('bio.en')) {
+        if ($request->has('bio')) {
             $data['bio'] = [
-                'en' => $request->input('bio.en'),
-                'tl' => $request->input('bio.tl') ?? $request->input('bio.en'),
+                'en' => $request->bio,
+                'tl' => $this->translateToTagalog($request->bio),
             ];
         }
 
         $staff = StaffMember::create($data);
+
+        // Append full image URL
+        if ($staff->image_path) {
+            $staff->image_url = asset('storage/' . $staff->image_path);
+        }
+
         return response()->json($staff, 201);
     }
 
-    public function update(Request $request, $id)
-    {
+    public function update(Request $request, $id) {
         $staff = StaffMember::findOrFail($id);
-
         $data = [];
 
-        if ($request->has('name.en')) {
+        if ($request->has('name')) {
             $data['name'] = [
-                'en' => $request->input('name.en'),
-                'tl' => $request->input('name.tl') ?? $request->input('name.en'),
+                'en' => $request->name,
+                'tl' => $this->translateToTagalog($request->name),
             ];
         }
 
-        if ($request->has('role.en')) {
+        if ($request->has('role')) {
             $data['role'] = [
-                'en' => $request->input('role.en'),
-                'tl' => $request->input('role.tl') ?? $request->input('role.en'),
+                'en' => $request->role,
+                'tl' => $this->translateToTagalog($request->role),
             ];
         }
 
@@ -94,32 +99,37 @@ class StaffMemberController extends Controller
         if ($request->has('is_active')) $data['is_active'] = $request->is_active;
 
         if ($request->hasFile('image')) {
+            // Delete old image if exists
             if ($staff->image_path) {
                 Storage::disk('public')->delete($staff->image_path);
             }
             $data['image_path'] = $request->file('image')->store('staff', 'public');
         }
 
-        if ($request->has('bio.en')) {
+        if ($request->has('bio')) {
             $data['bio'] = [
-                'en' => $request->input('bio.en'),
-                'tl' => $request->input('bio.tl') ?? $request->input('bio.en'),
+                'en' => $request->bio,
+                'tl' => $this->translateToTagalog($request->bio),
             ];
         }
 
         $staff->update($data);
+
+        // Append full image URL
+        if ($staff->image_path) {
+            $staff->image_url = asset('storage/' . $staff->image_path);
+        }
+
         return response()->json($staff);
     }
 
-    public function destroy($id)
-    {
+    public function destroy($id) {
         $staff = StaffMember::findOrFail($id);
         $staff->delete();
         return response()->json(['message' => 'Staff member deleted successfully']);
     }
 
-    public function restore($id)
-    {
+    public function restore($id) {
         $staff = StaffMember::withTrashed()->findOrFail($id);
         $staff->restore();
         return response()->json(['message' => 'Staff member restored successfully']);

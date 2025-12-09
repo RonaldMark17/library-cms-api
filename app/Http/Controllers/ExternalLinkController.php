@@ -4,12 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\ExternalLink;
 use Illuminate\Http\Request;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class ExternalLinkController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $links = ExternalLink::where('is_active', true)->orderBy('order')->get();
+
+        // Check if Tagalog translation is requested
+        $lang = $request->query('lang', 'en'); // default English
+        if ($lang === 'tl') {
+            $tr = new GoogleTranslate('tl'); // translate to Tagalog
+            foreach ($links as $link) {
+                $link->title = ['tl' => $tr->translate($link->title['en'])];
+                if (!empty($link->description)) {
+                    $link->description = ['tl' => $tr->translate($link->description['en'])];
+                }
+            }
+        }
+
         return response()->json($links);
     }
 
@@ -24,7 +38,6 @@ class ExternalLinkController extends Controller
         $validated = $request->validate([
             'title' => 'required|array',
             'title.en' => 'required|string',
-            'title.tl' => 'nullable|string',
             'url' => 'required|url',
             'description' => 'nullable|array',
             'icon' => 'nullable|string',
@@ -58,12 +71,5 @@ class ExternalLinkController extends Controller
         $link = ExternalLink::findOrFail($id);
         $link->delete();
         return response()->json(['message' => 'Link deleted successfully']);
-    }
-
-    public function restore($id)
-    {
-        $link = ExternalLink::withTrashed()->findOrFail($id);
-        $link->restore();
-        return response()->json(['message' => 'Link restored successfully']);
     }
 }

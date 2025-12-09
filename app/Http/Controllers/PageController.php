@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class PageController extends Controller
 {
@@ -24,18 +25,27 @@ class PageController extends Controller
     {
         $validated = $request->validate([
             'slug' => 'required|string|unique:pages',
-            'title' => 'required|array',
-            'title.en' => 'required|string',
-            'title.tl' => 'nullable|string',
-            'content' => 'required|array',
-            'content.en' => 'required|string',
-            'content.tl' => 'nullable|string',
+            'title' => 'required|string',
+            'content' => 'required|string',
             'meta_description' => 'nullable|string',
             'is_active' => 'nullable|boolean'
         ]);
 
         $validated['slug'] = Str::slug($validated['slug']);
-        $page = Page::create($validated);
+
+        // Auto-translate English to Tagalog
+        $tr = new GoogleTranslate('tl');
+        $title_tl = $tr->translate($validated['title']);
+        $content_tl = $tr->translate($validated['content']);
+
+        $page = Page::create([
+            'slug' => $validated['slug'],
+            'title' => ['en' => $validated['title'], 'tl' => $title_tl],
+            'content' => ['en' => $validated['content'], 'tl' => $content_tl],
+            'meta_description' => $validated['meta_description'] ?? null,
+            'is_active' => $validated['is_active'] ?? true,
+        ]);
+
         return response()->json($page, 201);
     }
 
@@ -45,17 +55,41 @@ class PageController extends Controller
 
         $validated = $request->validate([
             'slug' => 'nullable|string|unique:pages,slug,' . $id,
-            'title' => 'nullable|array',
-            'content' => 'nullable|array',
+            'title' => 'nullable|string',
+            'content' => 'nullable|string',
             'meta_description' => 'nullable|string',
             'is_active' => 'nullable|boolean'
         ]);
 
         if (isset($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['slug']);
+            $page->slug = Str::slug($validated['slug']);
         }
 
-        $page->update($validated);
+        $tr = new GoogleTranslate('tl');
+        if (isset($validated['title'])) {
+            $page->title = [
+                'en' => $validated['title'],
+                'tl' => $tr->translate($validated['title'])
+            ];
+        }
+
+        if (isset($validated['content'])) {
+            $page->content = [
+                'en' => $validated['content'],
+                'tl' => $tr->translate($validated['content'])
+            ];
+        }
+
+        if (isset($validated['meta_description'])) {
+            $page->meta_description = $validated['meta_description'];
+        }
+
+        if (isset($validated['is_active'])) {
+            $page->is_active = $validated['is_active'];
+        }
+
+        $page->save();
+
         return response()->json($page);
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ContentSection;
 use Illuminate\Http\Request;
+use App\Services\TranslationService;
 
 class ContentSectionController extends Controller
 {
@@ -42,14 +43,20 @@ class ContentSectionController extends Controller
     {
         $section = ContentSection::findOrFail($id);
 
-        $validated = $request->validate([
-            'content' => 'nullable|array',
-            'order' => 'nullable|integer',
-            'is_active' => 'nullable|boolean'
-        ]);
+        $translationService = new TranslationService();
+        $tagalog = $translationService->translateToTagalog($request->content['en']);
 
-        $section->update($validated);
-        return response()->json($section);
+        $section->content = [
+            "en" => $request->content['en'],
+            "tl" => $tagalog,
+        ];
+
+        $section->save();
+
+        return response()->json([
+            "message" => "Content updated",
+            "section" => $section
+        ]);
     }
 
     public function destroy($id)

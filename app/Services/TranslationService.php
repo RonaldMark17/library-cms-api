@@ -1,10 +1,8 @@
 <?php
+
 namespace App\Services;
 
 use Stichoza\GoogleTranslate\GoogleTranslate;
-use Illuminate\Support\Facades\Log;
-
-
 
 class TranslationService
 {
@@ -13,42 +11,16 @@ class TranslationService
     public function __construct()
     {
         $this->translator = new GoogleTranslate();
+        $this->translator->setSource('en');
+        $this->translator->setTarget('tl');
     }
 
-    public function translate($text, $targetLang = 'tl', $sourceLang = 'en')
+    public function translateToTagalog($text)
     {
         try {
-            $this->translator->setSource($sourceLang);
-            $this->translator->setTarget($targetLang);
             return $this->translator->translate($text);
         } catch (\Exception $e) {
-            Log::error('Translation error: ' . $e->getMessage());
-            return $text;
+            return ""; // fallback
         }
-    }
-
-    public function translateArray($data, $targetLang = 'tl', $sourceLang = 'en')
-    {
-        $translated = [];
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $translated[$key] = $this->translate($value, $targetLang, $sourceLang);
-            } else {
-                $translated[$key] = $value;
-            }
-        }
-        return $translated;
-    }
-
-    public function autoTranslateContent($content, $sourceLang = 'en')
-    {
-        $languages = ['tl'];
-        $translations = [$sourceLang => $content];
-
-        foreach ($languages as $lang) {
-            $translations[$lang] = $this->translate($content, $lang, $sourceLang);
-        }
-
-        return $translations;
     }
 }

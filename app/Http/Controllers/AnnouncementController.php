@@ -7,6 +7,7 @@ use App\Models\GuestSubscriber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class AnnouncementController extends Controller
 {
@@ -31,10 +32,8 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title.en' => 'required|string',
-            'title.tl' => 'nullable|string',
-            'content.en' => 'required|string',
-            'content.tl' => 'nullable|string',
+            'title' => 'required|string',
+            'content' => 'required|string',
             'image' => 'nullable|image|max:2048',
             'priority' => 'nullable|in:low,medium,high',
             'published_at' => 'nullable|date',
@@ -42,14 +41,16 @@ class AnnouncementController extends Controller
             'is_active' => 'nullable|boolean'
         ]);
 
+        // Auto-translate to Tagalog
+        $tr = new GoogleTranslate('tl');
         $data = [
             'title' => [
-                'en' => $request->input('title.en'),
-                'tl' => $request->input('title.tl') ?? $request->input('title.en'),
+                'en' => $request->title,
+                'tl' => $tr->translate($request->title),
             ],
             'content' => [
-                'en' => $request->input('content.en'),
-                'tl' => $request->input('content.tl') ?? $request->input('content.en'),
+                'en' => $request->content,
+                'tl' => $tr->translate($request->content),
             ],
             'priority' => $request->priority ?? 'medium',
             'published_at' => $request->published_at ?? now(),
@@ -68,7 +69,7 @@ class AnnouncementController extends Controller
         try {
             $this->notifySubscribers($announcement);
         } catch (\Exception $e) {
-            // Continue even if notification fails
+            // ignore notification errors
         }
 
         return response()->json($announcement, 201);
@@ -77,20 +78,20 @@ class AnnouncementController extends Controller
     public function update(Request $request, $id)
     {
         $announcement = Announcement::findOrFail($id);
-
+        $tr = new GoogleTranslate('tl');
         $data = [];
 
-        if ($request->has('title.en')) {
+        if ($request->has('title')) {
             $data['title'] = [
-                'en' => $request->input('title.en'),
-                'tl' => $request->input('title.tl') ?? $request->input('title.en'),
+                'en' => $request->title,
+                'tl' => $tr->translate($request->title),
             ];
         }
 
-        if ($request->has('content.en')) {
+        if ($request->has('content')) {
             $data['content'] = [
-                'en' => $request->input('content.en'),
-                'tl' => $request->input('content.tl') ?? $request->input('content.en'),
+                'en' => $request->content,
+                'tl' => $tr->translate($request->content),
             ];
         }
 

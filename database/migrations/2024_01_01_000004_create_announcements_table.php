@@ -8,14 +8,15 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+
 class CreateAnnouncementsTable extends Migration
 {
     public function up()
     {
         Schema::create('announcements', function (Blueprint $table) {
             $table->id();
-            $table->json('title'); // Multilingual
-            $table->json('content'); // Multilingual
+            $table->json('title'); // Multilingual (en + tl)
+            $table->json('content'); // Multilingual (en + tl)
             $table->string('image_path')->nullable();
             $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
             $table->timestamp('published_at')->nullable();
