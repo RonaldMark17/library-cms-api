@@ -3,15 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Announcement extends Model
 {
-    use SoftDeletes;
-
     protected $fillable = [
-        'title', 'content', 'image_path', 'priority',
-        'published_at', 'expires_at', 'is_active', 'created_by'
+        'title',
+        'content',
+        'image_path',
+        'priority',
+        'active',
+        'published_at',
+        'expires_at',
+        'created_by'
     ];
 
     protected $casts = [
@@ -19,7 +22,7 @@ class Announcement extends Model
         'content' => 'array',
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
-        'is_active' => 'boolean'
+        'active' => 'boolean',
     ];
 
     public function creator()
@@ -29,10 +32,16 @@ class Announcement extends Model
 
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)
-                     ->where(function($q) {
-                         $q->whereNull('expires_at')
-                           ->orWhere('expires_at', '>', now());
-                     });
+        return $query->where('active', true);
+    }
+
+    public function getTitleForLang(string $lang = 'en'): string
+    {
+        return $this->title[$lang] ?? $this->title['en'] ?? '';
+    }
+
+    public function getContentForLang(string $lang = 'en'): string
+    {
+        return $this->content[$lang] ?? $this->content['en'] ?? '';
     }
 }

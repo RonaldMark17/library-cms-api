@@ -16,6 +16,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'disabled',
         'two_factor_enabled',
         'two_factor_secret',
         'two_factor_recovery_codes'
@@ -31,7 +32,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'two_factor_enabled' => 'boolean',
-        'two_factor_recovery_codes' => 'array'
+        'two_factor_recovery_codes' => 'array',
+        'disabled' => 'boolean'
     ];
 
     public function announcements()

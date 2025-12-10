@@ -12,41 +12,77 @@ use App\Http\Controllers\GuestSubscriberController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TranslationController;
 
-// Public routes
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
+
+// Dashboard stats
+Route::get('/dashboard-stats', function () {
+    return response()->json([
+        'users' => \App\Models\User::count(),
+        'announcements' => \App\Models\Announcement::count(),
+        'staff' => \App\Models\StaffMember::count(),
+    ]);
+});
+
+// Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
 
-// Guest subscriber routes
+// Guest subscribers
 Route::post('/subscribe', [GuestSubscriberController::class, 'subscribe']);
 Route::post('/verify-subscription', [GuestSubscriberController::class, 'verify']);
 Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']);
 
-// Public content routes
+// Protected translator
+Route::post('/translate', [TranslationController::class, 'translate'])->middleware('auth:sanctum');
+
+// Public content
 Route::get('/content-sections', [ContentSectionController::class, 'index']);
 Route::get('/content-sections/{key}', [ContentSectionController::class, 'show']);
+
 Route::get('/staff-members', [StaffMemberController::class, 'index']);
 Route::get('/staff-members/{id}', [StaffMemberController::class, 'show']);
+
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
+
 Route::get('/menu-items', [MenuItemController::class, 'index']);
+
 Route::get('/pages', [PageController::class, 'index']);
 Route::get('/pages/{slug}', [PageController::class, 'show']);
+
 Route::get('/external-links', [ExternalLinkController::class, 'index']);
+
 Route::get('/settings', [SettingController::class, 'index']);
+
 Route::get('/search', [SearchController::class, 'search']);
 
-// Protected routes
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (Auth Required)
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Auth
+    // Auth/session
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/enable-2fa', [AuthController::class, 'enable2FA']);
     Route::post('/disable-2fa', [AuthController::class, 'disable2FA']);
 
-    // Librarian & Admin routes
+    /*
+    |--------------------------------------------------------------------------
+    | Admin + Librarian routes
+    |--------------------------------------------------------------------------
+    */
     Route::middleware('role:admin,librarian')->group(function () {
 
         // Content sections
@@ -57,13 +93,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Staff members
         Route::post('/staff-members', [StaffMemberController::class, 'store']);
-        Route::put('/staff-members/{id}', [StaffMemberController::class, 'update']); // fixed: PUT
+        Route::put('/staff-members/{id}', [StaffMemberController::class, 'update']);
         Route::delete('/staff-members/{id}', [StaffMemberController::class, 'destroy']);
         Route::post('/staff-members/{id}/restore', [StaffMemberController::class, 'restore']);
 
         // Announcements
         Route::post('/announcements', [AnnouncementController::class, 'store']);
-        Route::put('/announcements/{id}', [AnnouncementController::class, 'update']); // fixed: PUT
+        Route::put('/announcements/{id}', [AnnouncementController::class, 'update']);
         Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
         Route::post('/announcements/{id}/restore', [AnnouncementController::class, 'restore']);
 
@@ -88,10 +124,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Users
         Route::get('/users', [UserController::class, 'index']);
-        Route::put('/users/{id}', [UserController::class, 'update']); // ← FIXED PUT route
+        Route::put('/users/{id}', [UserController::class, 'update']);
     });
 
-    // Admin-only routes
+    /*
+    |--------------------------------------------------------------------------
+    | Admin-only routes
+    |--------------------------------------------------------------------------
+    */
     Route::middleware('role:admin')->group(function () {
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
         Route::put('/settings/{key}', [SettingController::class, 'update']);

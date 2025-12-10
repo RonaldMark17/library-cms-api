@@ -13,21 +13,24 @@ class AnnouncementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Announcement::with('creator');
+        $announcements = Announcement::latest('published_at')->paginate(10);
 
-        if (!$request->user() || !$request->user()->isLibrarian()) {
-            $query->active();
-        }
+        $announcements->getCollection()->transform(function ($a) {
+            $a->image_url = $a->image_path ? asset("storage/" . $a->image_path) : null;
+            return $a;
+        });
 
-        $announcements = $query->latest('published_at')->paginate(10);
         return response()->json($announcements);
     }
 
+
     public function show($id)
     {
-        $announcement = Announcement::with('creator')->findOrFail($id);
-        return response()->json($announcement);
+        $a = Announcement::findOrFail($id);
+        $a->image_url = $a->image_path ? asset("storage/" . $a->image_path) : null;
+        return response()->json($a);
     }
+
 
     public function store(Request $request)
     {
@@ -134,7 +137,7 @@ class AnnouncementController extends Controller
         foreach ($subscribers as $subscriber) {
             Mail::raw(
                 "New announcement: {$announcement->title['en']}\n\n{$announcement->content['en']}",
-                function($message) use ($subscriber) {
+                function ($message) use ($subscriber) {
                     $message->to($subscriber->email)
                         ->subject('New Library Announcement');
                 }
