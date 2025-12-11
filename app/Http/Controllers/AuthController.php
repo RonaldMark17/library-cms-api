@@ -50,12 +50,19 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // ❌ BLOCK DISABLED USERS
+        if ($user->disabled) {
+            return response()->json([
+                'message' => 'Your account is disabled. Contact admin.'
+            ], 403);
+        }
+
         if ($user->two_factor_enabled) {
             $code = rand(100000, 999999);
             Cache::put("2fa_{$user->id}", $code, now()->addMinutes(10));
 
             try {
-                Mail::raw("Your 2FA code is: $code", function($message) use ($user) {
+                Mail::raw("Your 2FA code is: $code", function ($message) use ($user) {
                     $message->to($user->email)->subject('Two-Factor Authentication Code');
                 });
             } catch (\Exception $e) {
@@ -94,6 +101,14 @@ class AuthController extends Controller
 
         Cache::forget("2fa_{$validated['user_id']}");
         $user = User::find($validated['user_id']);
+
+        // ❌ BLOCK DISABLED USERS even at 2FA
+        if ($user->disabled) {
+            return response()->json([
+                'message' => 'Your account is disabled. Contact admin.'
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

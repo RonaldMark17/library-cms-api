@@ -13,6 +13,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\ForgotPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +34,8 @@ Route::get('/dashboard-stats', function () {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 // Guest subscribers
 Route::post('/subscribe', [GuestSubscriberController::class, 'subscribe']);
@@ -40,7 +43,8 @@ Route::post('/verify-subscription', [GuestSubscriberController::class, 'verify']
 Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']);
 
 // Protected translator
-Route::post('/translate', [TranslationController::class, 'translate'])->middleware('auth:sanctum');
+Route::post('/translate', [TranslationController::class, 'translate'])
+    ->middleware('auth:sanctum');
 
 // Public content
 Route::get('/content-sections', [ContentSectionController::class, 'index']);
@@ -62,6 +66,7 @@ Route::get('/external-links', [ExternalLinkController::class, 'index']);
 Route::get('/settings', [SettingController::class, 'index']);
 
 Route::get('/search', [SearchController::class, 'search']);
+
 
 
 /*
@@ -122,9 +127,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/external-links/{id}', [ExternalLinkController::class, 'destroy']);
         Route::post('/external-links/{id}/restore', [ExternalLinkController::class, 'restore']);
 
-        // Users
+        /*
+        |--------------------------------------------------------------------------
+        | Users – Admin + Librarian (full management except delete)
+        |--------------------------------------------------------------------------
+        */
         Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::patch('/users/{id}/toggle-disable', [UserController::class, 'toggleDisable']);
     });
 
     /*
