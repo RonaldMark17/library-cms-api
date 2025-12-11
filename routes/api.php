@@ -1,19 +1,21 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ContentSectionController;
-use App\Http\Controllers\StaffMemberController;
-use App\Http\Controllers\AnnouncementController;
-use App\Http\Controllers\MenuItemController;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\ExternalLinkController;
-use App\Http\Controllers\GuestSubscriberController;
-use App\Http\Controllers\SettingController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\TranslationController;
-use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\{
+    AuthController,
+    ContentSectionController,
+    StaffMemberController,
+    AnnouncementController,
+    MenuItemController,
+    PageController,
+    ExternalLinkController,
+    GuestSubscriberController,
+    SettingController,
+    UserController,
+    SearchController,
+    TranslationController,
+    ForgotPasswordController
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +32,7 @@ Route::get('/dashboard-stats', function () {
     ]);
 });
 
-// Auth
+// Authentication
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
@@ -39,66 +41,64 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'
 
 // Guest subscribers
 Route::post('/subscribe', [GuestSubscriberController::class, 'subscribe']);
-Route::post('/verify-subscription', [GuestSubscriberController::class, 'verify']);
-Route::get('/unsubscribe', [GuestSubscriberController::class, 'unsubscribeView']); // For frontend view fallback if needed
-Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']); // For React frontend
-Route::get('/verify-subscription', [GuestSubscriberController::class, 'verify']);
-
-// Protected translator
-Route::post('/translate', [TranslationController::class, 'translate'])
-    ->middleware('auth:sanctum');
+Route::match(['get', 'post'], '/verify-subscription', [GuestSubscriberController::class, 'verify']);
+Route::get('/unsubscribe', [GuestSubscriberController::class, 'unsubscribeView']);
+Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']);
 
 // Public content
 Route::get('/content-sections', [ContentSectionController::class, 'index']);
 Route::get('/content-sections/{key}', [ContentSectionController::class, 'show']);
-
 Route::get('/staff-members', [StaffMemberController::class, 'index']);
 Route::get('/staff-members/{id}', [StaffMemberController::class, 'show']);
-
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
-
 Route::get('/menu-items', [MenuItemController::class, 'index']);
-Route::patch('/menu-items/toggle-active/{id}', [MenuItemController::class, 'toggleActive'])->middleware('auth:sanctum');
-
-
 Route::get('/pages', [PageController::class, 'index']);
 Route::get('/pages/{slug}', [PageController::class, 'show']);
-
 Route::get('/external-links', [ExternalLinkController::class, 'index']);
-
 Route::get('/settings', [SettingController::class, 'index']);
-
 Route::get('/search', [SearchController::class, 'search']);
+
+// Translate (protected)
+Route::post('/translate', [TranslationController::class, 'translate'])
+    ->middleware('auth:sanctum');
 
 /*
 |--------------------------------------------------------------------------
-| Protected Routes (Auth Required)
+| Protected Routes (auth required)
 |--------------------------------------------------------------------------
 */
-
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Auth/session
+    // Auth / session
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/enable-2fa', [AuthController::class, 'enable2FA']);
     Route::post('/disable-2fa', [AuthController::class, 'disable2FA']);
 
+    // User profile (self update)
+    Route::post('/users/{id}', [UserController::class, 'update']);
+
     /*
     |--------------------------------------------------------------------------
-    | Admin + Librarian routes
+    | Admin + Librarian Routes
     |--------------------------------------------------------------------------
     */
     Route::middleware('role:admin,librarian')->group(function () {
 
-        // Content sections
+        // Users
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::patch('/users/{id}/toggle-disable', [UserController::class, 'toggleDisable']);
+
+        // Content Sections
         Route::post('/content-sections', [ContentSectionController::class, 'store']);
         Route::put('/content-sections/{id}', [ContentSectionController::class, 'update']);
         Route::delete('/content-sections/{id}', [ContentSectionController::class, 'destroy']);
         Route::post('/content-sections/{id}/restore', [ContentSectionController::class, 'restore']);
 
-        // Staff members
+        // Staff Members
         Route::post('/staff-members', [StaffMemberController::class, 'store']);
         Route::put('/staff-members/{id}', [StaffMemberController::class, 'update']);
         Route::delete('/staff-members/{id}', [StaffMemberController::class, 'destroy']);
@@ -110,10 +110,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
         Route::post('/announcements/{id}/restore', [AnnouncementController::class, 'restore']);
 
-        // Menu items
+        // Menu Items
         Route::post('/menu-items', [MenuItemController::class, 'store']);
         Route::put('/menu-items/{id}', [MenuItemController::class, 'update']);
         Route::delete('/menu-items/{id}', [MenuItemController::class, 'destroy']);
+        Route::patch('/menu-items/toggle-active/{id}', [MenuItemController::class, 'toggleActive']);
         Route::post('/menu-items/{id}/restore', [MenuItemController::class, 'restore']);
         Route::post('/menu-items/reorder', [MenuItemController::class, 'reorder']);
 
@@ -123,26 +124,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/pages/{id}', [PageController::class, 'destroy']);
         Route::post('/pages/{id}/restore', [PageController::class, 'restore']);
 
-        // External links
+        // External Links
         Route::post('/external-links', [ExternalLinkController::class, 'store']);
         Route::put('/external-links/{id}', [ExternalLinkController::class, 'update']);
         Route::delete('/external-links/{id}', [ExternalLinkController::class, 'destroy']);
         Route::post('/external-links/{id}/restore', [ExternalLinkController::class, 'restore']);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Users – Admin + Librarian (full management except delete)
-        |--------------------------------------------------------------------------
-        */
-        Route::get('/users', [UserController::class, 'index']);
-        Route::post('/users', [UserController::class, 'store']);
-        Route::put('/users/{id}', [UserController::class, 'update']);
-        Route::patch('/users/{id}/toggle-disable', [UserController::class, 'toggleDisable']);
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Admin-only routes
+    | Admin Only Routes
     |--------------------------------------------------------------------------
     */
     Route::middleware('role:admin')->group(function () {
@@ -152,6 +143,3 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscribers', [GuestSubscriberController::class, 'index']);
     });
 });
-
-
-

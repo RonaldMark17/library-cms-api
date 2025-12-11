@@ -12,42 +12,36 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        "name",
-        "email",
-        "password",
-        "role",
-        "disabled",
-        "two_factor_enabled",
-        "two_factor_secret",
-        "two_factor_recovery_codes",
+        'name',
+        'email',
+        'password',
+        'role',
+        'disabled',
+        'phone',
+        'image_path',
+        'bio',
+        'order',
+        'is_active',
     ];
 
     protected $hidden = [
-        "password",
-        "remember_token",
-        "two_factor_secret",
-        "two_factor_recovery_codes",
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [
-        "email_verified_at" => "datetime",
-        "two_factor_enabled" => "boolean",
-        "two_factor_recovery_codes" => "array",
-        "disabled" => "boolean",
+        'disabled' => 'boolean',
+        'is_active' => 'boolean',
+        'bio' => 'array',
     ];
-
-    public function announcements()
-    {
-        return $this->hasMany(Announcement::class, "created_by");
-    }
 
     public function isAdmin()
     {
-        return $this->role === "admin";
+        return $this->role === 'admin';
     }
 
     public function isLibrarian()
     {
-        return in_array($this->role, ["admin", "librarian"]);
+        return in_array($this->role, ['admin', 'librarian']);
     }
 }
