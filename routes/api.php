@@ -67,8 +67,6 @@ Route::get('/settings', [SettingController::class, 'index']);
 
 Route::get('/search', [SearchController::class, 'search']);
 
-
-
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Auth Required)
@@ -149,5 +147,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/settings/bulk', [SettingController::class, 'bulkUpdate']);
         Route::get('/subscribers', [GuestSubscriberController::class, 'index']);
     });
-
 });

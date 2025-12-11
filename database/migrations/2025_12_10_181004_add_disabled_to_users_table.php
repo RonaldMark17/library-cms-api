@@ -4,16 +4,23 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up() {
-        Schema::table('users', function (Blueprint $table) {
-            $table->boolean('disabled')->default(false)->after('role');
-        });
+return new class extends Migration
+{
+    public function up()
+    {
+        if (!Schema::hasColumn('users', 'disabled')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('disabled')->default(false)->after('role');
+            });
+        }
     }
 
-    public function down() {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('disabled');
-        });
+    public function down()
+    {
+        if (Schema::hasColumn('users', 'disabled')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('disabled');
+            });
+        }
     }
 };
