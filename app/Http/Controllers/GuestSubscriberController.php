@@ -73,6 +73,8 @@ class GuestSubscriberController extends Controller
 
 
 
+
+
     public function unsubscribe(Request $request)
     {
         $token = $request->input('token') ?? null;
