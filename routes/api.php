@@ -40,7 +40,9 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'
 // Guest subscribers
 Route::post('/subscribe', [GuestSubscriberController::class, 'subscribe']);
 Route::post('/verify-subscription', [GuestSubscriberController::class, 'verify']);
-Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']);
+Route::get('/unsubscribe', [GuestSubscriberController::class, 'unsubscribeView']); // For frontend view fallback if needed
+Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']); // For React frontend
+Route::get('/verify-subscription', [GuestSubscriberController::class, 'verify']);
 
 // Protected translator
 Route::post('/translate', [TranslationController::class, 'translate'])
@@ -150,3 +152,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscribers', [GuestSubscriberController::class, 'index']);
     });
 });
+
+
+

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Stichoza\GoogleTranslate\GoogleTranslate;
+use Illuminate\Support\Str;
 
 class AnnouncementController extends Controller
 {
@@ -23,14 +24,12 @@ class AnnouncementController extends Controller
         return response()->json($announcements);
     }
 
-
     public function show($id)
     {
         $a = Announcement::findOrFail($id);
         $a->image_url = $a->image_path ? asset("storage/" . $a->image_path) : null;
         return response()->json($a);
     }
-
 
     public function store(Request $request)
     {
@@ -44,8 +43,8 @@ class AnnouncementController extends Controller
             'is_active' => 'nullable|boolean'
         ]);
 
-        // Auto-translate to Tagalog
         $tr = new GoogleTranslate('tl');
+
         $data = [
             'title' => [
                 'en' => $request->title,
@@ -72,7 +71,7 @@ class AnnouncementController extends Controller
         try {
             $this->notifySubscribers($announcement);
         } catch (\Exception $e) {
-            // ignore notification errors
+            // ignore email errors
         }
 
         return response()->json($announcement, 201);
@@ -135,13 +134,26 @@ class AnnouncementController extends Controller
             ->get();
 
         foreach ($subscribers as $subscriber) {
-            Mail::raw(
-                "New announcement: {$announcement->title['en']}\n\n{$announcement->content['en']}",
-                function ($message) use ($subscriber) {
+            // Generate unsubscribe token if missing
+            if (!$subscriber->unsubscribe_token) {
+                $subscriber->unsubscribe_token = Str::random(64);
+                $subscriber->save();
+            }
+
+            $unsubscribeUrl = env('FRONTEND_URL') . "/unsubscribe?token=" . $subscriber->unsubscribe_token;
+
+            $messageBody = "New announcement: {$announcement->title['en']}\n\n";
+            $messageBody .= "{$announcement->content['en']}\n\n";
+            $messageBody .= "If you no longer wish to receive these notifications, you can unsubscribe here: {$unsubscribeUrl}";
+
+            try {
+                Mail::raw($messageBody, function ($message) use ($subscriber) {
                     $message->to($subscriber->email)
                         ->subject('New Library Announcement');
-                }
-            );
+                });
+            } catch (\Exception $e) {
+                // ignore email errors
+            }
         }
     }
 }

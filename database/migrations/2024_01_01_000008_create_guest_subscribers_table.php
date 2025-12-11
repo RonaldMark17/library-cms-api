@@ -11,7 +11,6 @@ class CreateGuestSubscribersTable extends Migration
             $table->id();
             $table->string('email')->unique();
             $table->string('verification_token')->nullable();
-            $table->string('unsubscribe_token')->nullable();
             $table->timestamp('verified_at')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

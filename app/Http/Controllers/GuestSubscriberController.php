@@ -9,7 +9,6 @@ use Illuminate\Support\Str;
 
 class GuestSubscriberController extends Controller
 {
-    // Subscribe a new email
     public function subscribe(Request $request)
     {
         $validated = $request->validate([
@@ -27,13 +26,12 @@ class GuestSubscriberController extends Controller
         try {
             Mail::raw(
                 "Please verify your subscription by clicking this link: {$verificationUrl}",
-                function($message) use ($validated) {
+                function ($message) use ($validated) {
                     $message->to($validated['email'])
                         ->subject('Verify Your Subscription');
                 }
             );
         } catch (\Exception $e) {
-            // Continue even if email fails
         }
 
         return response()->json([
@@ -41,18 +39,14 @@ class GuestSubscriberController extends Controller
         ], 201);
     }
 
-    // Verify email using token
     public function verify(Request $request)
     {
-        $validated = $request->validate([
-            'token' => 'required|string'
-        ]);
+        $token = $request->input('token') ?? $request->query('token');
 
-        $subscriber = GuestSubscriber::where('verification_token', $validated['token'])->first();
+        if (!$token) return response()->json(['message' => 'Verification token is required'], 422);
 
-        if (!$subscriber) {
-            return response()->json(['message' => 'Invalid verification token'], 404);
-        }
+        $subscriber = GuestSubscriber::where('verification_token', $token)->first();
+        if (!$subscriber) return response()->json(['message' => 'Invalid verification token'], 404);
 
         $subscriber->update([
             'verified_at' => now(),
@@ -62,29 +56,55 @@ class GuestSubscriberController extends Controller
         return response()->json(['message' => 'Email verified successfully']);
     }
 
-    // Unsubscribe an email
     public function unsubscribe(Request $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email'
-        ]);
+        $token = $request->input('token') ?? null;
+        $email = $request->input('email') ?? null;
 
-        $subscriber = GuestSubscriber::where('email', $validated['email'])->first();
+        if ($token) {
+            $subscriber = GuestSubscriber::where('unsubscribe_token', $token)->first();
+        } elseif ($email) {
+            $subscriber = GuestSubscriber::where('email', $email)->first();
+        } else {
+            return response()->json(['status' => 'error', 'message' => 'Token or email is required'], 422);
+        }
 
         if (!$subscriber) {
-            return response()->json(['message' => 'Email not found'], 404);
+            return response()->json(['status' => 'error', 'message' => 'Subscriber not found'], 404);
+        }
+
+        if (!$subscriber->is_active) {
+            return response()->json(['status' => 'info', 'message' => 'You are already unsubscribed']);
         }
 
         $subscriber->update(['is_active' => false]);
 
-        return response()->json(['message' => 'Unsubscribed successfully']);
+        return response()->json(['status' => 'success', 'message' => 'You have successfully unsubscribed']);
+    }
+    public function unsubscribeView(Request $request)
+    {
+        $token = $request->query('token');
+
+        if (!$token) {
+            return view('unsubscribe', ['status' => 'error', 'message' => 'Invalid unsubscribe link.']);
+        }
+
+        $subscriber = GuestSubscriber::where('unsubscribe_token', $token)->first();
+        if (!$subscriber) {
+            return view('unsubscribe', ['status' => 'error', 'message' => 'Subscriber not found or already unsubscribed.']);
+        }
+
+        if (!$subscriber->is_active) {
+            return view('unsubscribe', ['status' => 'info', 'message' => 'You are already unsubscribed.']);
+        }
+
+        $subscriber->update(['is_active' => false]);
+        return view('unsubscribe', ['status' => 'success', 'message' => 'You have successfully unsubscribed from notifications.']);
     }
 
-    // List all active subscribers (verified and unverified)
     public function index()
     {
-        $subscribers = GuestSubscriber::where('is_active', true)
-            ->paginate(20); // Include all active subscribers
+        $subscribers = GuestSubscriber::where('is_active', true)->paginate(20);
         return response()->json($subscribers);
     }
 }
