@@ -41,12 +41,27 @@ class GuestSubscriberController extends Controller
 
     public function verify(Request $request)
     {
+        // Accept token from body OR query string
         $token = $request->input('token') ?? $request->query('token');
 
-        if (!$token) return response()->json(['message' => 'Verification token is required'], 422);
+        if (!$token) {
+            return response()->json(['message' => 'Verification token is required'], 422);
+        }
 
         $subscriber = GuestSubscriber::where('verification_token', $token)->first();
-        if (!$subscriber) return response()->json(['message' => 'Invalid verification token'], 404);
+
+        if (!$subscriber) {
+            // Check if the token is already used
+            $subscriber = GuestSubscriber::whereNotNull('verified_at')
+                ->where('verification_token', null)
+                ->first();
+
+            if ($subscriber) {
+                return response()->json(['message' => 'Email verified']);
+            }
+
+            return response()->json(['message' => 'Invalid verification token'], 404);
+        }
 
         $subscriber->update([
             'verified_at' => now(),
@@ -55,6 +70,8 @@ class GuestSubscriberController extends Controller
 
         return response()->json(['message' => 'Email verified successfully']);
     }
+
+
 
     public function unsubscribe(Request $request)
     {

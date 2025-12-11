@@ -37,7 +37,7 @@ class ContentSectionSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'key' => 'about_us',
+                'key' => 'about us',
                 'content' => [
                     'en' => 'Established in 1995, our library has been serving the community for over 28 years. With a collection of over 50,000 books, periodicals, and digital resources, we provide comprehensive information services to students, researchers, and the general public. Our state-of-the-art facilities include computer labs, study rooms, children\'s section, and multimedia resources.',
                     'tl' => 'Itinatag noong 1995, ang aming aklatan ay naglilingkod sa komunidad sa loob ng mahigit 28 taon. Sa koleksyon na mahigit 50,000 libro, periodicals, at digital resources, nagbibigay kami ng komprehensibong serbisyo ng impormasyon sa mga estudyante, mananaliksik, at publiko. Ang aming makabagong pasilidad ay kinabibilangan ng computer labs, study rooms, children\'s section, at multimedia resources.'
