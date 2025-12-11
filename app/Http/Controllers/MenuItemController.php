@@ -9,6 +9,7 @@ class MenuItemController extends Controller
 {
     public function index()
     {
+        // Only show active items for frontend navigation
         $menuItems = MenuItem::with('children')
             ->whereNull('parent_id')
             ->where('is_active', true)
@@ -59,18 +60,12 @@ class MenuItemController extends Controller
         return response()->json($menuItem);
     }
 
-    public function destroy($id)
+    public function toggleActive($id)
     {
         $menuItem = MenuItem::findOrFail($id);
-        $menuItem->delete();
-        return response()->json(['message' => 'Menu item deleted successfully']);
-    }
-
-    public function restore($id)
-    {
-        $menuItem = MenuItem::withTrashed()->findOrFail($id);
-        $menuItem->restore();
-        return response()->json(['message' => 'Menu item restored successfully']);
+        $menuItem->update(['is_active' => !$menuItem->is_active]);
+        $status = $menuItem->is_active ? 'unhidden' : 'hidden';
+        return response()->json(['message' => "Menu item {$status} successfully", 'menuItem' => $menuItem]);
     }
 
     public function reorder(Request $request)

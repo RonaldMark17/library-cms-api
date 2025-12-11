@@ -57,6 +57,8 @@ Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
 
 Route::get('/menu-items', [MenuItemController::class, 'index']);
+Route::patch('/menu-items/toggle-active/{id}', [MenuItemController::class, 'toggleActive'])->middleware('auth:sanctum');
+
 
 Route::get('/pages', [PageController::class, 'index']);
 Route::get('/pages/{slug}', [PageController::class, 'show']);
