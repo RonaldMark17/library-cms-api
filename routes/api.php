@@ -49,6 +49,7 @@ Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']);
 Route::get('/content-sections', [ContentSectionController::class, 'index']);
 Route::get('/content-sections/{key}', [ContentSectionController::class, 'show']);
 Route::get('/staff-members', [StaffMemberController::class, 'index']);
+Route::get('/users', [UserController::class, 'index']);
 Route::get('/staff-members/{id}', [StaffMemberController::class, 'show']);
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
@@ -87,7 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin,librarian')->group(function () {
 
         // Users
-        Route::get('/users', [UserController::class, 'index']);
+        //Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{id}', [UserController::class, 'update']);
         Route::patch('/users/{id}/toggle-disable', [UserController::class, 'toggleDisable']);
