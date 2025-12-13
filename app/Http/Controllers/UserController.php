@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    // List all users
     public function index()
     {
         return response()->json(User::orderBy('created_at', 'desc')->get());
     }
 
+    // Create a new user
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -21,9 +23,24 @@ class UserController extends Controller
             "email" => "required|email|unique:users,email",
             "password" => "required|string|min:6|confirmed",
             "role" => "required|string|in:admin,librarian,staff",
+            "phone" => "nullable|string|max:20",
+            "bio" => "nullable|string",
+            "image" => "nullable|image|max:2048"
         ]);
 
+        // Hash password
         $validated["password"] = Hash::make($validated["password"]);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('users', 'public');
+            $validated['image_path'] = $path;
+        }
+
+        // Convert bio to JSON array if provided
+        if (isset($validated['bio'])) {
+            $validated['bio'] = ['en' => $validated['bio']];
+        }
 
         $user = User::create($validated);
 
@@ -33,6 +50,7 @@ class UserController extends Controller
         ], 201);
     }
 
+    // Update a user
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -46,12 +64,27 @@ class UserController extends Controller
             "email" => ["required", "email", Rule::unique("users")->ignore($user->id)],
             "role" => "nullable|string|in:admin,librarian,staff",
             "password" => "nullable|string|min:6|confirmed",
+            "phone" => "nullable|string|max:20",
+            "bio" => "nullable|string",
+            "image" => "nullable|image|max:2048"
         ]);
 
+        // Hash password if provided
         if (!empty($validated["password"])) {
             $validated["password"] = Hash::make($validated["password"]);
         } else {
             unset($validated["password"]);
+        }
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('users', 'public');
+            $validated['image_path'] = $path;
+        }
+
+        // Convert bio to JSON array if provided
+        if (isset($validated['bio'])) {
+            $validated['bio'] = ['en' => $validated['bio']];
         }
 
         $user->update($validated);
@@ -62,6 +95,7 @@ class UserController extends Controller
         ]);
     }
 
+    // Toggle disable/enable user
     public function toggleDisable(Request $request, $id)
     {
         $user = User::findOrFail($id);

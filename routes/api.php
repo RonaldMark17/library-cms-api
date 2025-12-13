@@ -33,9 +33,9 @@ Route::get('/dashboard-stats', function () {
 });
 
 // Authentication
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
+// Route::post('/register', [AuthController::class, 'register']);
+// Route::post('/login', [AuthController::class, 'login']);
+// Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
@@ -59,6 +59,9 @@ Route::get('/pages/{slug}', [PageController::class, 'show']);
 Route::get('/external-links', [ExternalLinkController::class, 'index']);
 Route::get('/settings', [SettingController::class, 'index']);
 Route::get('/search', [SearchController::class, 'search']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
 
 // Translate (protected)
 Route::post('/translate', [TranslationController::class, 'translate'])
@@ -76,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/enable-2fa', [AuthController::class, 'enable2FA']);
     Route::post('/disable-2fa', [AuthController::class, 'disable2FA']);
+    
 
     // User profile (self update)
     Route::post('/users/{id}', [UserController::class, 'update']);

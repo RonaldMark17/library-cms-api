@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', ['admin', 'librarian', 'staff'])->default('staff');
             $table->boolean('disabled')->default(false);
+            $table->boolean('two_factor_enabled')->default(false)->after('disabled');
             $table->string('phone')->nullable();
             $table->string('image_path')->nullable();
             $table->json('bio')->nullable();
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
+            $table->timestamp('email_verified_at')->nullable()->after('two_factor_enabled');
             $table->softDeletes();
         });
     }

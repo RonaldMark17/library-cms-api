@@ -11,6 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    // Register new user
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -33,6 +34,7 @@ class AuthController extends Controller
         ], 201);
     }
 
+    // Login
     public function login(Request $request)
     {
         $request->validate([
@@ -50,13 +52,14 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // ❌ BLOCK DISABLED USERS
+        // Block disabled users
         if ($user->disabled) {
             return response()->json([
                 'message' => 'Your account is disabled. Contact admin.'
             ], 403);
         }
 
+        // Handle 2FA
         if ($user->two_factor_enabled) {
             $code = rand(100000, 999999);
             Cache::put("2fa_{$user->id}", $code, now()->addMinutes(10));
@@ -86,6 +89,7 @@ class AuthController extends Controller
         ]);
     }
 
+    // Verify 2FA
     public function verify2FA(Request $request)
     {
         $validated = $request->validate([
@@ -102,7 +106,6 @@ class AuthController extends Controller
         Cache::forget("2fa_{$validated['user_id']}");
         $user = User::find($validated['user_id']);
 
-        // ❌ BLOCK DISABLED USERS even at 2FA
         if ($user->disabled) {
             return response()->json([
                 'message' => 'Your account is disabled. Contact admin.'
@@ -119,28 +122,39 @@ class AuthController extends Controller
         ]);
     }
 
+    // Enable 2FA for authenticated user
     public function enable2FA(Request $request)
     {
         $user = $request->user();
         $user->update(['two_factor_enabled' => true]);
 
-        return response()->json(['message' => '2FA enabled successfully']);
+        return response()->json([
+            'message' => '2FA enabled successfully',
+            'two_factor_enabled' => $user->two_factor_enabled
+        ]);
     }
 
+    // Disable 2FA for authenticated user
     public function disable2FA(Request $request)
     {
         $user = $request->user();
         $user->update(['two_factor_enabled' => false]);
 
-        return response()->json(['message' => '2FA disabled successfully']);
+        return response()->json([
+            'message' => '2FA disabled successfully',
+            'two_factor_enabled' => $user->two_factor_enabled
+        ]);
     }
 
+
+    // Logout
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out successfully']);
     }
 
+    // Get authenticated user
     public function me(Request $request)
     {
         return response()->json($request->user());
