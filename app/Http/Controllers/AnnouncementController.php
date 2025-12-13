@@ -67,13 +67,6 @@ class AnnouncementController extends Controller
 
         $announcement = Announcement::create($data);
 
-        // Notify subscribers
-        try {
-            $this->notifySubscribers($announcement);
-        } catch (\Exception $e) {
-            // ignore email errors
-        }
-
         return response()->json($announcement, 201);
     }
 
@@ -127,14 +120,19 @@ class AnnouncementController extends Controller
         return response()->json(['message' => 'Announcement restored successfully']);
     }
 
-    private function notifySubscribers($announcement)
+    // This method will be called by the scheduled command
+    public function notifySubscribers(Announcement $announcement)
     {
+        // Prevent double notifications
+        if ($announcement->notified_at) {
+            return;
+        }
+
         $subscribers = GuestSubscriber::where('is_active', true)
             ->whereNotNull('verified_at')
             ->get();
 
         foreach ($subscribers as $subscriber) {
-            // Generate unsubscribe token if missing
             if (!$subscriber->unsubscribe_token) {
                 $subscriber->unsubscribe_token = Str::random(64);
                 $subscriber->save();
@@ -155,5 +153,7 @@ class AnnouncementController extends Controller
                 // ignore email errors
             }
         }
+
+        $announcement->update(['notified_at' => now()]);
     }
 }

@@ -14,7 +14,8 @@ class Announcement extends Model
         'active',
         'published_at',
         'expires_at',
-        'created_by'
+        'created_by',
+        'notified_at'
     ];
 
     protected $casts = [
@@ -23,6 +24,7 @@ class Announcement extends Model
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
         'active' => 'boolean',
+        'notified_at' => 'datetime',
     ];
 
     public function creator()
