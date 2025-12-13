@@ -26,6 +26,6 @@ class NotifySubscribers extends Command
             $controller->notifySubscribers($announcement);
         }
 
-        $this->info('Notifications sent for today\'s announcements.');
+        $this->info("Notifications sent for today's announcements.");
     }
 }
