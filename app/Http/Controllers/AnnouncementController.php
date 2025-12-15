@@ -24,13 +24,6 @@ class AnnouncementController extends Controller
         return response()->json($announcements);
     }
 
-    public function show($id)
-    {
-        $a = Announcement::findOrFail($id);
-        $a->image_url = $a->image_path ? asset("storage/" . $a->image_path) : null;
-        return response()->json($a);
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -40,7 +33,6 @@ class AnnouncementController extends Controller
             'priority' => 'nullable|in:low,medium,high',
             'published_at' => 'nullable|date',
             'expires_at' => 'nullable|date',
-            'is_active' => 'nullable|boolean'
         ]);
 
         $tr = new GoogleTranslate('tl');
@@ -57,7 +49,7 @@ class AnnouncementController extends Controller
             'priority' => $request->priority ?? 'medium',
             'published_at' => $request->published_at ?? now(),
             'expires_at' => $request->expires_at,
-            'is_active' => $request->is_active ?? true,
+            'is_active' => true,
             'created_by' => $request->user()->id,
         ];
 
@@ -66,6 +58,9 @@ class AnnouncementController extends Controller
         }
 
         $announcement = Announcement::create($data);
+
+        // 🔥 SEND EMAIL NOTIFICATIONS (FIX)
+        $this->notifySubscribers($announcement);
 
         return response()->json($announcement, 201);
     }
@@ -93,7 +88,6 @@ class AnnouncementController extends Controller
         if ($request->has('priority')) $data['priority'] = $request->priority;
         if ($request->has('published_at')) $data['published_at'] = $request->published_at;
         if ($request->has('expires_at')) $data['expires_at'] = $request->expires_at;
-        if ($request->has('is_active')) $data['is_active'] = $request->is_active;
 
         if ($request->hasFile('image')) {
             if ($announcement->image_path) {
@@ -103,30 +97,29 @@ class AnnouncementController extends Controller
         }
 
         $announcement->update($data);
+
         return response()->json($announcement);
     }
 
     public function destroy($id)
     {
-        $announcement = Announcement::findOrFail($id);
-        $announcement->delete();
+        Announcement::findOrFail($id)->delete();
         return response()->json(['message' => 'Announcement deleted successfully']);
     }
 
-    public function restore($id)
-    {
-        $announcement = Announcement::withTrashed()->findOrFail($id);
-        $announcement->restore();
-        return response()->json(['message' => 'Announcement restored successfully']);
-    }
-
-    // This method will be called by the scheduled command
+    /**
+     * 🔔 EMAIL NOTIFICATION FIX
+     */
     public function notifySubscribers(Announcement $announcement)
     {
-        // Prevent double notifications
-        if ($announcement->notified_at) {
-            return;
-        }
+        // Prevent duplicate notifications
+        if ($announcement->notified_at) return;
+
+        // Do not notify future announcements
+        if ($announcement->published_at && $announcement->published_at->isFuture()) return;
+
+        // Do not notify expired announcements
+        if ($announcement->expires_at && $announcement->expires_at->isPast()) return;
 
         $subscribers = GuestSubscriber::where('is_active', true)
             ->whereNotNull('verified_at')
@@ -134,23 +127,23 @@ class AnnouncementController extends Controller
 
         foreach ($subscribers as $subscriber) {
             if (!$subscriber->unsubscribe_token) {
-                $subscriber->unsubscribe_token = Str::random(64);
-                $subscriber->save();
+                $subscriber->update([
+                    'unsubscribe_token' => Str::random(64)
+                ]);
             }
 
-            $unsubscribeUrl = env('FRONTEND_URL') . "/unsubscribe?token=" . $subscriber->unsubscribe_token;
-
-            $messageBody = "New announcement: {$announcement->title['en']}\n\n";
-            $messageBody .= "{$announcement->content['en']}\n\n";
-            $messageBody .= "If you no longer wish to receive these notifications, you can unsubscribe here: {$unsubscribeUrl}";
+            $unsubscribeUrl = env('FRONTEND_URL') . "/unsubscribe?token={$subscriber->unsubscribe_token}";
 
             try {
-                Mail::raw($messageBody, function ($message) use ($subscriber) {
-                    $message->to($subscriber->email)
-                        ->subject('New Library Announcement');
-                });
+                Mail::raw(
+                    "New announcement:\n\n{$announcement->title['en']}\n\n{$announcement->content['en']}\n\nUnsubscribe: {$unsubscribeUrl}",
+                    function ($message) use ($subscriber) {
+                        $message->to($subscriber->email)
+                            ->subject('New Library Announcement');
+                    }
+                );
             } catch (\Exception $e) {
-                // ignore email errors
+                logger()->error('Email failed: ' . $e->getMessage());
             }
         }
 

@@ -10,7 +10,11 @@ class GuestSubscriber extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'email', 'verification_token', 'verified_at', 'is_active','unsubscribe_token'
+        'email',
+        'verification_token',
+        'verified_at',
+        'is_active',
+        'unsubscribe_token'
     ];
 
     protected $casts = [

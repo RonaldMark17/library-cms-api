@@ -11,7 +11,7 @@ class Announcement extends Model
         'content',
         'image_path',
         'priority',
-        'active',
+        'is_active', // ✅ FIXED
         'published_at',
         'expires_at',
         'created_by',
@@ -23,7 +23,7 @@ class Announcement extends Model
         'content' => 'array',
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
-        'active' => 'boolean',
+        'is_active' => 'boolean',
         'notified_at' => 'datetime',
     ];
 
