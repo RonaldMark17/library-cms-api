@@ -7,14 +7,10 @@ use Illuminate\Http\Request;
 
 class MenuItemController extends Controller
 {
+    // Fetch all menu items (flat) for frontend
     public function index()
     {
-        // Only show active items for frontend navigation
-        $menuItems = MenuItem::with('children')
-            ->whereNull('parent_id')
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get();
+        $menuItems = MenuItem::orderBy('order')->get();
         return response()->json($menuItems);
     }
 

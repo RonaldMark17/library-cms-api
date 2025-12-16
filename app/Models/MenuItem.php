@@ -27,4 +27,10 @@ class MenuItem extends Model
     {
         return $this->hasMany(MenuItem::class, 'parent_id')->orderBy('order');
     }
+
+    // Recursive children for nested tree
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive');
+    }
 }

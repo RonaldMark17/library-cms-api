@@ -149,4 +149,18 @@ class AnnouncementController extends Controller
 
         $announcement->update(['notified_at' => now()]);
     }
+    public function show($id)
+    {
+        // Use `with('creator')` to include the creator relationship
+        $announcement = Announcement::with('creator')->find($id);
+
+        if (!$announcement) {
+            return response()->json(['message' => 'Announcement not found'], 404);
+        }
+
+        // Add image URL
+        $announcement->image_url = $announcement->image_path ? asset("storage/" . $announcement->image_path) : null;
+
+        return response()->json($announcement);
+    }
 }
