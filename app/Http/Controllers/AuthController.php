@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Validation\ValidationException;
+use App\Mail\TwoFactorCode;
 
 class AuthController extends Controller
 {
@@ -52,7 +52,6 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Block disabled users
         if ($user->disabled) {
             return response()->json([
                 'message' => 'Your account is disabled. Contact admin.'
@@ -65,11 +64,9 @@ class AuthController extends Controller
             Cache::put("2fa_{$user->id}", $code, now()->addMinutes(10));
 
             try {
-                Mail::raw("Your 2FA code is: $code", function ($message) use ($user) {
-                    $message->to($user->email)->subject('Two-Factor Authentication Code');
-                });
+                Mail::to($user->email)->send(new TwoFactorCode($user, $code));
             } catch (\Exception $e) {
-                // Continue without 2FA if email fails
+                \Log::error("2FA email failed: " . $e->getMessage());
             }
 
             return response()->json([
@@ -145,7 +142,6 @@ class AuthController extends Controller
             'two_factor_enabled' => $user->two_factor_enabled
         ]);
     }
-
 
     // Logout
     public function logout(Request $request)

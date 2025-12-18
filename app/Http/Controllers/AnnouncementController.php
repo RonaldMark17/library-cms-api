@@ -9,9 +9,13 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Stichoza\GoogleTranslate\GoogleTranslate;
 use Illuminate\Support\Str;
+use App\Mail\NewAnnouncement;
 
 class AnnouncementController extends Controller
 {
+    /**
+     * List announcements with pagination
+     */
     public function index(Request $request)
     {
         $announcements = Announcement::latest('published_at')->paginate(10);
@@ -24,6 +28,9 @@ class AnnouncementController extends Controller
         return response()->json($announcements);
     }
 
+    /**
+     * Create a new announcement
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -59,12 +66,15 @@ class AnnouncementController extends Controller
 
         $announcement = Announcement::create($data);
 
-        // 🔥 SEND EMAIL NOTIFICATIONS (FIX)
+        // Send email notifications to subscribers
         $this->notifySubscribers($announcement);
 
         return response()->json($announcement, 201);
     }
 
+    /**
+     * Update an existing announcement
+     */
     public function update(Request $request, $id)
     {
         $announcement = Announcement::findOrFail($id);
@@ -101,6 +111,9 @@ class AnnouncementController extends Controller
         return response()->json($announcement);
     }
 
+    /**
+     * Delete an announcement
+     */
     public function destroy($id)
     {
         Announcement::findOrFail($id)->delete();
@@ -108,17 +121,33 @@ class AnnouncementController extends Controller
     }
 
     /**
-     * 🔔 EMAIL NOTIFICATION FIX
+     * Show a single announcement
+     */
+    public function show($id)
+    {
+        $announcement = Announcement::with('creator')->find($id);
+
+        if (!$announcement) {
+            return response()->json(['message' => 'Announcement not found'], 404);
+        }
+
+        $announcement->image_url = $announcement->image_path ? asset("storage/" . $announcement->image_path) : null;
+
+        return response()->json($announcement);
+    }
+
+    /**
+     * Notify active verified subscribers about a new announcement
      */
     public function notifySubscribers(Announcement $announcement)
     {
         // Prevent duplicate notifications
         if ($announcement->notified_at) return;
 
-        // Do not notify future announcements
+        // Skip future announcements
         if ($announcement->published_at && $announcement->published_at->isFuture()) return;
 
-        // Do not notify expired announcements
+        // Skip expired announcements
         if ($announcement->expires_at && $announcement->expires_at->isPast()) return;
 
         $subscribers = GuestSubscriber::where('is_active', true)
@@ -135,32 +164,13 @@ class AnnouncementController extends Controller
             $unsubscribeUrl = env('FRONTEND_URL') . "/unsubscribe?token={$subscriber->unsubscribe_token}";
 
             try {
-                Mail::raw(
-                    "New announcement:\n\n{$announcement->title['en']}\n\n{$announcement->content['en']}\n\nUnsubscribe: {$unsubscribeUrl}",
-                    function ($message) use ($subscriber) {
-                        $message->to($subscriber->email)
-                            ->subject('New Library Announcement');
-                    }
-                );
+                Mail::to($subscriber->email)
+                    ->send(new \App\Mail\NewAnnouncement($announcement, $unsubscribeUrl));
             } catch (\Exception $e) {
-                logger()->error('Email failed: ' . $e->getMessage());
+                logger()->error('Announcement email failed: ' . $e->getMessage());
             }
         }
 
         $announcement->update(['notified_at' => now()]);
-    }
-    public function show($id)
-    {
-        // Use `with('creator')` to include the creator relationship
-        $announcement = Announcement::with('creator')->find($id);
-
-        if (!$announcement) {
-            return response()->json(['message' => 'Announcement not found'], 404);
-        }
-
-        // Add image URL
-        $announcement->image_url = $announcement->image_path ? asset("storage/" . $announcement->image_path) : null;
-
-        return response()->json($announcement);
     }
 }

@@ -30,26 +30,24 @@ Route::get('/dashboard-stats', function () {
     ]);
 });
 
-// Authentication (Public)
+// Authentication
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
 
-// Guest subscribers
+// Guest Subscribers
 Route::post('/subscribe', [GuestSubscriberController::class, 'subscribe']);
-Route::match(['get', 'post'], '/verify-subscription', [GuestSubscriberController::class, 'verify']);
+Route::get('/verify-subscription', [GuestSubscriberController::class, 'verify']); // Use GET for link verification
 Route::get('/unsubscribe', [GuestSubscriberController::class, 'unsubscribeView']);
 Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']);
 
-// Public content
+// Public Content
 Route::get('/content-sections', [ContentSectionController::class, 'index']);
 Route::get('/content-sections/{key}', [ContentSectionController::class, 'show']);
-
-Route::get('/users', [UserController::class, 'index']);          // List all users
-Route::get('/users/{id}', [UserController::class, 'show']);      // Single user (public view)
-
+Route::get('/users', [UserController::class, 'index']);
+Route::get('/users/{id}', [UserController::class, 'show']);
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
@@ -59,7 +57,6 @@ Route::get('/external-links', [ExternalLinkController::class, 'index']);
 Route::get('/settings', [SettingController::class, 'index']);
 Route::get('/search', [SearchController::class, 'search']);
 
-
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Auth Required)
@@ -67,13 +64,13 @@ Route::get('/search', [SearchController::class, 'search']);
 */
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Auth / session
+    // Session / Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/enable-2fa', [AuthController::class, 'enable2FA']);
     Route::post('/disable-2fa', [AuthController::class, 'disable2FA']);
 
-    // User profile (self update)
+    // User profile (self-update)
     Route::post('/users/{id}', [UserController::class, 'update']);
 
     /*
