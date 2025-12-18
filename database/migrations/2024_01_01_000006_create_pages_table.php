@@ -13,6 +13,7 @@ class CreatePagesTable extends Migration
             $table->string('slug')->unique();
             $table->json('title'); // Multilingual
             $table->json('content'); // Multilingual
+            $table->string('image')->nullable();
             $table->string('meta_description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

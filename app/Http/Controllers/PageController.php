@@ -28,26 +28,37 @@ class PageController extends Controller
             'title' => 'required|string',
             'content' => 'required|string',
             'meta_description' => 'nullable|string',
-            'is_active' => 'nullable|boolean'
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $validated['slug'] = Str::slug($validated['slug']);
 
-        // Auto-translate English to Tagalog
         $tr = new GoogleTranslate('tl');
-        $title_tl = $tr->translate($validated['title']);
-        $content_tl = $tr->translate($validated['content']);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('pages', 'public');
+        }
 
         $page = Page::create([
             'slug' => $validated['slug'],
-            'title' => ['en' => $validated['title'], 'tl' => $title_tl],
-            'content' => ['en' => $validated['content'], 'tl' => $content_tl],
+            'title' => [
+                'en' => $validated['title'],
+                'tl' => $tr->translate($validated['title']),
+            ],
+            'content' => [
+                'en' => $validated['content'],
+                'tl' => $tr->translate($validated['content']),
+            ],
             'meta_description' => $validated['meta_description'] ?? null,
+            'image' => $imagePath,
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
         return response()->json($page, 201);
     }
+
 
     public function update(Request $request, $id)
     {
@@ -58,7 +69,8 @@ class PageController extends Controller
             'title' => 'nullable|string',
             'content' => 'nullable|string',
             'meta_description' => 'nullable|string',
-            'is_active' => 'nullable|boolean'
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if (isset($validated['slug'])) {
@@ -66,18 +78,26 @@ class PageController extends Controller
         }
 
         $tr = new GoogleTranslate('tl');
+
         if (isset($validated['title'])) {
             $page->title = [
                 'en' => $validated['title'],
-                'tl' => $tr->translate($validated['title'])
+                'tl' => $tr->translate($validated['title']),
             ];
         }
 
         if (isset($validated['content'])) {
             $page->content = [
                 'en' => $validated['content'],
-                'tl' => $tr->translate($validated['content'])
+                'tl' => $tr->translate($validated['content']),
             ];
+        }
+
+        if ($request->hasFile('image')) {
+            if ($page->image) {
+                \Storage::disk('public')->delete($page->image);
+            }
+            $page->image = $request->file('image')->store('pages', 'public');
         }
 
         if (isset($validated['meta_description'])) {
@@ -92,6 +112,7 @@ class PageController extends Controller
 
         return response()->json($page);
     }
+
 
     public function destroy($id)
     {

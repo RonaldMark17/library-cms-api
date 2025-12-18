@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     AuthController,
     ContentSectionController,
-    StaffMemberController,
     AnnouncementController,
     MenuItemController,
     PageController,
@@ -19,7 +18,7 @@ use App\Http\Controllers\{
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| Public Routes (No Auth Required)
 |--------------------------------------------------------------------------
 */
 
@@ -28,16 +27,15 @@ Route::get('/dashboard-stats', function () {
     return response()->json([
         'users' => \App\Models\User::count(),
         'announcements' => \App\Models\Announcement::count(),
-        'staff' => \App\Models\StaffMember::count(),
     ]);
 });
 
-// Authentication
-// Route::post('/register', [AuthController::class, 'register']);
-// Route::post('/login', [AuthController::class, 'login']);
-// Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
+// Authentication (Public)
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
 
 // Guest subscribers
 Route::post('/subscribe', [GuestSubscriberController::class, 'subscribe']);
@@ -48,9 +46,10 @@ Route::post('/unsubscribe', [GuestSubscriberController::class, 'unsubscribe']);
 // Public content
 Route::get('/content-sections', [ContentSectionController::class, 'index']);
 Route::get('/content-sections/{key}', [ContentSectionController::class, 'show']);
-Route::get('/staff-members', [StaffMemberController::class, 'index']);
-Route::get('/users', [UserController::class, 'index']);
-Route::get('/staff-members/{id}', [StaffMemberController::class, 'show']);
+
+Route::get('/users', [UserController::class, 'index']);          // List all users
+Route::get('/users/{id}', [UserController::class, 'show']);      // Single user (public view)
+
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
@@ -59,18 +58,11 @@ Route::get('/pages/{slug}', [PageController::class, 'show']);
 Route::get('/external-links', [ExternalLinkController::class, 'index']);
 Route::get('/settings', [SettingController::class, 'index']);
 Route::get('/search', [SearchController::class, 'search']);
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
 
-
-// Translate (protected)
-Route::post('/translate', [TranslationController::class, 'translate'])
-    ->middleware('auth:sanctum');
 
 /*
 |--------------------------------------------------------------------------
-| Protected Routes (auth required)
+| Protected Routes (Auth Required)
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
@@ -80,7 +72,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/enable-2fa', [AuthController::class, 'enable2FA']);
     Route::post('/disable-2fa', [AuthController::class, 'disable2FA']);
-    
 
     // User profile (self update)
     Route::post('/users/{id}', [UserController::class, 'update']);
@@ -92,8 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
     Route::middleware('role:admin,librarian')->group(function () {
 
-        // Users
-        //Route::get('/users', [UserController::class, 'index']);
+        // Users management
         Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{id}', [UserController::class, 'update']);
         Route::patch('/users/{id}/toggle-disable', [UserController::class, 'toggleDisable']);
@@ -103,12 +93,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/content-sections/{id}', [ContentSectionController::class, 'update']);
         Route::delete('/content-sections/{id}', [ContentSectionController::class, 'destroy']);
         Route::post('/content-sections/{id}/restore', [ContentSectionController::class, 'restore']);
-
-        // Staff Members
-        Route::post('/staff-members', [StaffMemberController::class, 'store']);
-        Route::put('/staff-members/{id}', [StaffMemberController::class, 'update']);
-        Route::delete('/staff-members/{id}', [StaffMemberController::class, 'destroy']);
-        Route::post('/staff-members/{id}/restore', [StaffMemberController::class, 'restore']);
 
         // Announcements
         Route::post('/announcements', [AnnouncementController::class, 'store']);
@@ -148,4 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/settings/bulk', [SettingController::class, 'bulkUpdate']);
         Route::get('/subscribers', [GuestSubscriberController::class, 'index']);
     });
+
+    // Translation (Protected)
+    Route::post('/translate', [TranslationController::class, 'translate']);
 });

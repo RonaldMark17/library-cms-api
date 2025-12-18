@@ -10,7 +10,12 @@ class Page extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'slug', 'title', 'content', 'meta_description', 'is_active'
+        'slug',
+        'title',
+        'content',
+        'meta_description',
+        'image',
+        'is_active'
     ];
 
     protected $casts = [
