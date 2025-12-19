@@ -69,6 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/enable-2fa', [AuthController::class, 'enable2FA']);
     Route::post('/disable-2fa', [AuthController::class, 'disable2FA']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
+
 
     // User profile (self-update)
     Route::post('/users/{id}', [UserController::class, 'update']);
