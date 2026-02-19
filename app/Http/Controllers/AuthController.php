@@ -180,4 +180,5 @@ class AuthController extends Controller
             'message' => 'Password changed successfully'
         ]);
     }
+    
 }
